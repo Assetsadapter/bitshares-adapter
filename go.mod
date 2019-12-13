@@ -1,4 +1,4 @@
-module github.com/blocktree/bitshares-adapter
+module github.com/Assetsadapter/bitshares-adapter
 
 require (
 	github.com/asdine/storm v2.1.2+incompatible
