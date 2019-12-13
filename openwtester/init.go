@@ -1,7 +1,7 @@
 package openwtester
 
 import (
-	"github.com/blocktree/bitshares-adapter/bitshares"
+	"github.com/Assetsadapter/bitshares-adapter/bitshares"
 	"github.com/blocktree/openwallet/log"
 	"github.com/blocktree/openwallet/openw"
 )

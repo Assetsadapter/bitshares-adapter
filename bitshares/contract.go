@@ -16,7 +16,7 @@
 package bitshares
 
 import (
-	"github.com/blocktree/bitshares-adapter/types"
+	"github.com/Assetsadapter/bitshares-adapter/types"
 	"github.com/blocktree/openwallet/openwallet"
 	"github.com/shopspring/decimal"
 )

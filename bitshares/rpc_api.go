@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/blocktree/bitshares-adapter/types"
+	"github.com/Assetsadapter/bitshares-adapter/types"
 	"github.com/blocktree/openwallet/log"
 	bt "github.com/denkhaus/bitshares/types"
 	"github.com/imroc/req"

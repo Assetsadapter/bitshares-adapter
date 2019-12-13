@@ -1,7 +1,7 @@
 package types
 
 import (
-	"github.com/blocktree/bitshares-adapter/encoding"
+	"github.com/Assetsadapter/bitshares-adapter/encoding"
 	"github.com/pkg/errors"
 )
 

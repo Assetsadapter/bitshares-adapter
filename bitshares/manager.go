@@ -16,7 +16,7 @@
 package bitshares
 
 import (
-	"github.com/blocktree/bitshares-adapter/addrdec"
+	"github.com/Assetsadapter/bitshares-adapter/addrdec"
 	"github.com/blocktree/openwallet/log"
 	"github.com/blocktree/openwallet/openwallet"
 	"github.com/denkhaus/bitshares"

@@ -19,7 +19,7 @@ import (
 	"encoding/hex"
 	"testing"
 
-	"github.com/blocktree/bitshares-adapter/addrdec"
+	"github.com/Assetsadapter/bitshares-adapter/addrdec"
 )
 
 func TestAddressDecoder_AddressEncode(t *testing.T) {

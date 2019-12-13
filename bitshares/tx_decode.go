@@ -22,8 +22,8 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/blocktree/bitshares-adapter/txsigner"
-	"github.com/blocktree/bitshares-adapter/types"
+	"github.com/Assetsadapter/bitshares-adapter/txsigner"
+	"github.com/Assetsadapter/bitshares-adapter/types"
 	"github.com/denkhaus/bitshares/config"
 	"github.com/denkhaus/bitshares/crypto"
 	"github.com/denkhaus/bitshares/operations"

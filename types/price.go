@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"strconv"
 
-	"github.com/blocktree/bitshares-adapter/encoding"
+	"github.com/Assetsadapter/bitshares-adapter/encoding"
 )
 
 type Price struct {

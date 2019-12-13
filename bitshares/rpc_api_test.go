@@ -3,7 +3,7 @@ package bitshares
 import (
 	"testing"
 
-	"github.com/blocktree/bitshares-adapter/types"
+	"github.com/Assetsadapter/bitshares-adapter/types"
 	"github.com/blocktree/openwallet/log"
 )
 
