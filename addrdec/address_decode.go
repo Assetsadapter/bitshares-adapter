@@ -17,7 +17,7 @@ var (
 	//BTS stuff
 	BTS_mainnetPublic = addressEncoder.AddressType{"bts", addressEncoder.BTCAlphabet, "ripemd160", "", 33, []byte(BTSPublicKeyPrefixCompat), nil}
 	// BTS_mainnetPrivateWIF           = AddressType{"base58", BTCAlphabet, "doubleSHA256", "", 32, []byte{0x80}, nil}
-	// BTS_mainnetPrivateWIFCompressed = AddressType{"base58", BTCAlphabet, "doubleSHA256", "", 32, []byte{0x80}, []byte{0x01}}
+	//BTS_mainnetPrivateWIFCompressed = addressEncoder.AddressType{"base58", addressEncoder.BTCAlphabet, "doubleSHA256", "", 32, []byte{0x80}, []byte{0x01}}
 
 	Default = AddressDecoderV2{}
 )

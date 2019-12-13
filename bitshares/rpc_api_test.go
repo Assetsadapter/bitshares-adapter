@@ -17,7 +17,7 @@ func TestWalletClient_GetBlockchainInfo(t *testing.T) {
 }
 
 func TestWalletClient_GetBlockByHeight(t *testing.T) {
-	block, err := tw.Api.GetBlockByHeight(161025)
+	block, err := tw.Api.GetBlockByHeight(676911)
 	if err != nil {
 		t.Errorf("GetBlockByHeight failed unexpected error: %v\n", err)
 	} else {

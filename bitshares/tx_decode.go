@@ -58,8 +58,14 @@ func (decoder *TransactionDecoder) CreateRawTransaction(wrapper openwallet.Walle
 		precise   uint64
 	)
 
-	assetID = types.MustParseObjectID(rawTx.Coin.Contract.Address)
-	precise = rawTx.Coin.Contract.Decimals
+	if rawTx.Coin.IsContract {
+		assetID = types.MustParseObjectID(rawTx.Coin.Contract.Address)
+		precise = rawTx.Coin.Contract.Decimals
+	}else{
+		assetID =  types.MustParseObjectID("1.3.0" )
+		precise =   5
+		rawTx.Coin.Contract.Address="1.3.0"
+	}
 
 	//获取wallet
 	account, err := wrapper.GetAssetsAccountInfo(accountID)
@@ -97,7 +103,7 @@ func (decoder *TransactionDecoder) CreateRawTransaction(wrapper openwallet.Walle
 	amountDec = amountDec.Shift(int32(precise))
 
 	if accountBalanceDec.LessThan(amountDec) {
-		return fmt.Errorf("the balance: %s is not enough", amountStr)
+		return openwallet.Errorf(openwallet.ErrInsufficientBalanceOfAccount, "all address's balance of account is not enough")
 	}
 
 	memo := rawTx.GetExtParam().Get("memo").String()
@@ -135,6 +141,21 @@ func (decoder *TransactionDecoder) CreateRawTransaction(wrapper openwallet.Walle
 	}
 
 	ops := &bt.Operations{&op}
+	operations   := bt.Operations(*ops)
+	fees, err := decoder.wm.Api.GetRequiredFee(operations, assetID.String())
+	if err != nil {
+		return openwallet.Errorf(openwallet.ErrCreateRawTransactionFailed, "can't get fees")
+	}
+
+	feesDec := decimal.Zero
+	for _, fee := range fees {
+		feesDec = feesDec.Add(decimal.New(int64(fee.Amount), 0))
+	}
+
+	if err := operations.ApplyFees(fees); err != nil {
+		return openwallet.Errorf(openwallet.ErrCreateRawTransactionFailed, "ApplyFees")
+	}
+
 
 	createTxErr := decoder.createRawTransaction(
 		wrapper,
@@ -142,6 +163,7 @@ func (decoder *TransactionDecoder) CreateRawTransaction(wrapper openwallet.Walle
 		&accountBalanceDec,
 		account.Alias,
 		ops,
+		feesDec,
 		memo)
 	if createTxErr != nil {
 		return createTxErr
@@ -325,9 +347,9 @@ func (decoder *TransactionDecoder) CreateSummaryRawTransactionWithError(wrapper 
 		assetID    types.ObjectID
 		precise    uint64
 	)
-
-	assetID = types.MustParseObjectID(sumRawTx.Coin.Contract.Address)
-	precise = sumRawTx.Coin.Contract.Decimals
+	sumRawTx.Coin.Contract=openwallet.SmartContract{Address:"1.3.0",Symbol:"BTS",Token:"BTS"}
+	assetID = types.MustParseObjectID("1.3.0")
+	precise = 5
 
 	minTransfer, _ := decimal.NewFromString(sumRawTx.MinTransfer)
 	retainedBalance, _ := decimal.NewFromString(sumRawTx.RetainedBalance)
@@ -379,15 +401,7 @@ func (decoder *TransactionDecoder) CreateSummaryRawTransactionWithError(wrapper 
 	decoder.wm.Log.Debugf("fees: %d", 0)
 	decoder.wm.Log.Debugf("sumAmount: %v", sumAmount)
 
-	//创建一笔交易单
-	rawTx := &openwallet.RawTransaction{
-		Coin:    sumRawTx.Coin,
-		Account: sumRawTx.Account,
-		To: map[string]string{
-			sumRawTx.SummaryAddress: sumAmount.String(),
-		},
-		Required: 1,
-	}
+
 
 	asset := bt.AssetIDFromObject(bt.NewAssetID(assetID.String()))
 	amount := bt.AssetAmount{
@@ -422,6 +436,31 @@ func (decoder *TransactionDecoder) CreateSummaryRawTransactionWithError(wrapper 
 	}
 
 	ops := &bt.Operations{&op}
+	operations   := bt.Operations(*ops)
+	fees, err := decoder.wm.Api.GetRequiredFee(operations, assetID.String())
+	if err != nil {
+		return nil,openwallet.Errorf(openwallet.ErrCreateRawTransactionFailed, "can't get fees")
+	}
+
+	feesDec := decimal.Zero
+	for _, fee := range fees {
+		feesDec = feesDec.Add(decimal.New(int64(fee.Amount), 0))
+	}
+
+	if err := operations.ApplyFees(fees); err != nil {
+		return nil,openwallet.Errorf(openwallet.ErrCreateRawTransactionFailed, "ApplyFees")
+	}
+	op.Amount.Amount= bt.Int64(sumAmount.Sub(feesDec).IntPart())
+
+	//创建一笔交易单
+	rawTx := &openwallet.RawTransaction{
+		Coin:    sumRawTx.Coin,
+		Account: sumRawTx.Account,
+		To: map[string]string{
+			sumRawTx.SummaryAddress: sumAmount.Sub(feesDec).String(),
+		},
+		Required: 1,
+	}
 
 	createTxErr := decoder.createRawTransaction(
 		wrapper,
@@ -429,6 +468,7 @@ func (decoder *TransactionDecoder) CreateSummaryRawTransactionWithError(wrapper 
 		&accountBalanceDec,
 		account.Alias,
 		ops,
+		feesDec,
 		memo)
 	rawTxWithErr := &openwallet.RawTransactionWithError{
 		RawTx: rawTx,
@@ -448,6 +488,7 @@ func (decoder *TransactionDecoder) createRawTransaction(
 	balanceDec *decimal.Decimal,
 	from string,
 	ops *bt.Operations,
+	feesDec decimal.Decimal,
 	memo string) *openwallet.Error {
 
 	var (
@@ -459,33 +500,19 @@ func (decoder *TransactionDecoder) createRawTransaction(
 		accountID        = rawTx.Account.AccountID
 		amountDec        = decimal.Zero
 		curveType        = decoder.wm.Config.CurveType
-		assetID          = bt.NewAssetID(rawTx.Coin.Contract.Address)
+		//assetID          = bt.NewAssetID(rawTx.Coin.Contract.Address)
 		precise          = rawTx.Coin.Contract.Decimals
 		operations       = bt.Operations(*ops)
 	)
-
 	for k, v := range rawTx.To {
 		to = k
 		amountDec, _ = decimal.NewFromString(v)
 		break
 	}
 
-	fees, err := decoder.wm.Api.GetRequiredFee(operations, assetID.String())
-	if err != nil {
-		return openwallet.Errorf(openwallet.ErrCreateRawTransactionFailed, "can't get fees")
-	}
-
-	feesDec := decimal.Zero
-	for _, fee := range fees {
-		feesDec = feesDec.Add(decimal.New(int64(fee.Amount), 0))
-	}
 
 	if balanceDec.LessThan(amountDec.Add(feesDec)) {
 		return openwallet.Errorf(openwallet.ErrCreateRawTransactionFailed, "the balance: %s is not enough", balanceDec.Shift(-int32(precise)))
-	}
-
-	if err := operations.ApplyFees(fees); err != nil {
-		return openwallet.Errorf(openwallet.ErrCreateRawTransactionFailed, "ApplyFees")
 	}
 
 	info, err := decoder.wm.Api.GetBlockchainInfo()
@@ -538,7 +565,7 @@ func (decoder *TransactionDecoder) createRawTransaction(
 
 	//计算账户的实际转账amount
 	if from != to {
-		accountTotalSent = accountTotalSent.Add(amountDec)
+		accountTotalSent = accountTotalSent.Add(amountDec).Add(feesDec)
 	}
 	accountTotalSent = decimal.Zero.Sub(accountTotalSent)
 
@@ -553,9 +580,9 @@ func (decoder *TransactionDecoder) createRawTransaction(
 	rawTx.RawHex = hex.EncodeToString(jsonTx)
 	rawTx.Signatures[rawTx.Account.AccountID] = keySignList
 	rawTx.FeeRate = "0"
-	rawTx.Fees = feesDec.String()
+	rawTx.Fees = feesDec.Shift(-5).String()
 	rawTx.IsBuilt = true
-	rawTx.TxAmount = accountTotalSent.String()
+	rawTx.TxAmount = accountTotalSent.Shift(-5).String()
 	rawTx.TxFrom = txFrom
 	rawTx.TxTo = txTo
 

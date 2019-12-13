@@ -147,7 +147,7 @@ func (c *WalletClient) GetBlockchainInfo() (*BlockchainInfo, error) {
 
 // GetBlockByHeight returns a certain block
 func (c *WalletClient) GetBlockByHeight(height uint32) (*Block, error) {
-	r, err := c.call("get_block", []interface{}{height}, false)
+	r, err := c.call("get_block", []interface{}{height},true)
 	if err != nil {
 		return nil, err
 	}
@@ -157,7 +157,7 @@ func (c *WalletClient) GetBlockByHeight(height uint32) (*Block, error) {
 
 // GetTransaction returns the TX
 func (c *WalletClient) GetTransaction(height uint32, trxInBlock int) (*types.Transaction, error) {
-	r, err := c.call("get_transaction", []interface{}{height, trxInBlock}, false)
+	r, err := c.call("get_transaction", []interface{}{height, trxInBlock},true)
 	if err != nil {
 		return nil, err
 	}
@@ -176,7 +176,7 @@ func (c *WalletClient) GetTransaction(height uint32, trxInBlock int) (*types.Tra
 
 // GetAssetsBalance Returns information about the given account.
 func (c *WalletClient) GetAssetsBalance(account types.ObjectID, asset types.ObjectID) (*Balance, error) {
-	r, err := c.call("get_account_balances", []interface{}{account.String(), []interface{}{asset.String()}}, false)
+	r, err := c.call("list_account_balances", []interface{}{account.String(), []interface{}{asset.String()}},true)
 	if err != nil {
 		return nil, err
 	}
@@ -242,7 +242,7 @@ func (c *WalletClient) GetRequiredFee(ops []bt.Operation, assetID string) ([]bt.
 func (c *WalletClient) BroadcastTransaction(tx *bt.SignedTransaction) (*BroadcastResponse, error) {
 	resp := BroadcastResponse{}
 
-	r, err := c.call("broadcast_transaction", []interface{}{tx}, true)
+	r, err := c.call("broadcast_transaction", []interface{}{tx},true)
 	if err != nil {
 		return nil, err
 	}

@@ -18,11 +18,13 @@ package bitshares
 import (
 	"errors"
 	"fmt"
+	"github.com/shopspring/decimal"
 	"math/big"
+	"strconv"
 	"time"
 
+	"github.com/blocktree/bitshares-adapter/encoding"
 	"github.com/blocktree/bitshares-adapter/types"
-
 	"github.com/blocktree/openwallet/common"
 	"github.com/blocktree/openwallet/log"
 	"github.com/blocktree/openwallet/openwallet"
@@ -340,7 +342,6 @@ func (bs *BtsBlockScanner) ExtractTransaction(blockHeight uint64, blockHash stri
 		bs.wm.Log.Std.Debug("transaction does not have operation: (sig) %s", transaction.Signatures)
 		return ExtractResult{Success: true}
 	}
-
 	for _, operation := range transaction.Operations {
 
 		if transferOperation, ok := operation.(*types.TransferOperation); ok {
@@ -407,20 +408,33 @@ func (bs *BtsBlockScanner) InitExtractResult(sourceKey string, operation *types.
 	reason := ""
 
 	token := operation.Amount.AssetID.String()
-	amount := common.NewString(operation.Amount.Amount).String()
-
-	contractID := openwallet.GenContractID(bs.wm.Symbol(), token)
-	coin := openwallet.Coin{
-		Symbol:     bs.wm.Symbol(),
-		IsContract: true,
-		ContractID: contractID,
+	amount,_ := decimal.NewFromString(common.NewString(operation.Amount.Amount).String())
+	transferFee := decimal.Zero
+	if operation.Fee.AssetID.String() == "1.3.0" {
+		transferFee, _ = decimal.NewFromString(common.NewString(operation.Fee.Amount).String())
+		transferFee = transferFee.Div(decimal.New(1,5))
 	}
-
-	coin.Contract = openwallet.SmartContract{
-		Symbol:     bs.wm.Symbol(),
-		ContractID: contractID,
-		Address:    token,
-		Token:      token,
+	contractID := openwallet.GenContractID(bs.wm.Symbol(), token)
+	var coin openwallet.Coin
+	//BTS 资产 assetsId 1.3.0
+	if token=="1.3.0" {
+		amount = amount.Div(decimal.New(1,5))
+		coin = openwallet.Coin{
+			Symbol:     bs.wm.Symbol(),
+			IsContract: false,
+		}
+	}else {//其它资产
+		coin = openwallet.Coin{
+			Symbol:     bs.wm.Symbol(),
+			IsContract: true,
+			ContractID: contractID,
+			Contract: openwallet.SmartContract{
+				Symbol:     bs.wm.Symbol(),
+				ContractID: contractID,
+				Address:    token,
+				Token:      token,
+			},
+		}
 	}
 
 	accounts, err := bs.wm.Api.GetAccounts(operation.From.String(), operation.To.String())
@@ -430,19 +444,29 @@ func (bs *BtsBlockScanner) InitExtractResult(sourceKey string, operation *types.
 	}
 	from := accounts[0]
 	to := accounts[1]
+	var memoText =""
+	//如果交易有memo,解密加密的memo Message
+	if len(operation.Memo.Message)>0{
+		nonce, _ := strconv.ParseUint(operation.Memo.Nonce,10,64)
+		memoText,err=encoding.Decrypt(operation.Memo.Message.String(),from.Options.MemoKey,to.Options.MemoKey,nonce,bs.wm.Config.MemoPrivateKey)
+		if err !=nil{
+			bs.wm.Log.Std.Error("cannot get transaction memo, txId=%s  \n err= %v", result.TxID, err)
 
+		}
+	}
 	transx := &openwallet.Transaction{
-		Fees:        "0",
+		Fees:        transferFee.String(),
 		Coin:        coin,
 		BlockHash:   result.BlockHash,
 		BlockHeight: result.BlockHeight,
 		TxID:        result.TxID,
 		// Decimal:     0,
-		Amount:      amount,
+		Amount:      amount.String(),
 		ConfirmTime: result.BlockTime,
-		From:        []string{from.Name + ":" + amount},
-		To:          []string{to.Name + ":" + amount},
+		From:        []string{from.Name + ":" + amount.String()},
+		To:          []string{to.Name + ":" + amount.String()},
 		IsMemo:      true,
+		Memo:		 memoText,
 		Status:      status,
 		Reason:      reason,
 		TxType:      0,
@@ -575,8 +599,8 @@ func (bs *BtsBlockScanner) extractTxOutput(operation *types.TransferOperation, t
 	txOutput.Recharge.Coin = coin
 	txOutput.Recharge.Amount = tx.Amount
 	txOutput.Recharge.Symbol = coin.Symbol
-	//txOutput.Recharge.IsMemo = true
-	//txOutput.Recharge.Memo = data.Memo
+	txOutput.Recharge.IsMemo = true
+	txOutput.Recharge.Memo = txExtractData.Transaction.Memo
 	txOutput.Recharge.BlockHash = tx.BlockHash
 	txOutput.Recharge.BlockHeight = tx.BlockHeight
 	txOutput.Recharge.Index = 0 //账户模型填0
@@ -707,6 +731,21 @@ func (bs *BtsBlockScanner) GetScannedBlockHeight() uint64 {
 func (bs *BtsBlockScanner) GetBalanceByAddress(address ...string) ([]*openwallet.Balance, error) {
 
 	addrBalanceArr := make([]*openwallet.Balance, 0)
+	var contract = openwallet.SmartContract{
+		Address:"1.3.0",
+		Token:"BTS",
+		Decimals:5,
+	}
+	tokenBalances,err:=bs.wm.ContractDecoder.GetTokenBalanceByAddress(contract,address...)
+	if err !=nil{
+		return nil,err
+	}
+	for _,token := range tokenBalances {
+		balanceAmount,_ := decimal.NewFromString(token.Balance.Balance)
+
+		var  balance = openwallet.Balance{Symbol:bs.wm.Config.Symbol,Balance:balanceAmount.String()}
+		addrBalanceArr = append(addrBalanceArr, &balance)
+	}
 
 	return addrBalanceArr, nil
 }
