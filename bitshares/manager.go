@@ -51,14 +51,15 @@ func NewWalletManager(cacheManager openwallet.ICacheManager) *WalletManager {
 	wm.ContractDecoder = NewContractDecoder(&wm)
 
 	wm.WebsocketAPI = NewWebsocketAPI(wm.Config.ServerWS)
-	privateNetConfig :=config.ChainConfig{
-		Name:      "private_net",
-		CoreAsset: "CORE",
-		Prefix:    "BTS",
-		ID:"c3807ea4b7d28da76249c6be53dc6342a12888327aab9d66ac1d53e31e797ae3",
-	}
-	config.Add(privateNetConfig)
-	config.SetCurrent("c3807ea4b7d28da76249c6be53dc6342a12888327aab9d66ac1d53e31e797ae3")
+	//privateNetConfig :=config.ChainConfig{
+	//	Name:      "private_net",
+	//	CoreAsset: "CORE",
+	//	Prefix:    "BTS",
+	//	ID:"c3807ea4b7d28da76249c6be53dc6342a12888327aab9d66ac1d53e31e797ae3",
+	//}
+	//config.Add(privateNetConfig)
+	//config.SetCurrent("c3807ea4b7d28da76249c6be53dc6342a12888327aab9d66ac1d53e31e797ae3")
+	config.SetCurrent(config.ChainIDBTS)
 
 	return &wm
 }
