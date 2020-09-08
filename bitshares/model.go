@@ -124,6 +124,9 @@ type Block struct {
 func NewBlock(height uint32, result *gjson.Result) *Block {
 	obj := Block{}
 	json.Unmarshal([]byte(result.Raw), &obj)
+	if obj.BlockID == ""{
+		obj.BlockID=result.Get("block_id").String()
+	}
 	obj.Height = uint64(height)
 	return &obj
 }
