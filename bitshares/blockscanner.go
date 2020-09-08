@@ -617,8 +617,8 @@ func (bs *BtsBlockScanner) newExtractDataNotify(height uint64, extractData map[s
 				if err != nil {
 					log.Error("BlockExtractDataNotify unexpected error:", err)
 					//记录未扫区块
-					unscanRecord := openwallet.NewUnscanRecord(height, "", "", bs.wm.Symbol())
-					bs.SaveUnscanRecord(unscanRecord)
+					unscanRecord := openwallet.NewUnscanRecord(height, "", "ExtractData Notify failed.", bs.wm.Symbol())
+					err = bs.SaveUnscanRecord(unscanRecord)
 					if err != nil {
 						log.Std.Error("block height: %d, save unscan record failed. unexpected error: %v", height, err.Error())
 					}
