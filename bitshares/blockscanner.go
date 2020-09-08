@@ -175,7 +175,7 @@ func (bs *BtsBlockScanner) ScanBlockTask() {
 
 			if forkBlock != nil {
 				//通知分叉区块给观测者，异步处理
-				bs.forkBlockNotify(forkBlock)
+				//bs.forkBlockNotify(forkBlock)
 			}
 
 		} else {
