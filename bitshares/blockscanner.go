@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"github.com/shopspring/decimal"
 	"math/big"
-	"strconv"
 	"time"
 
 	"github.com/Assetsadapter/bitshares-adapter/encoding"
@@ -447,7 +446,8 @@ func (bs *BtsBlockScanner) InitExtractResult(sourceKey string, operation *types.
 	var memoText =""
 	//如果交易有memo,解密加密的memo Message
 	if len(operation.Memo.Message)>0{
-		nonce, _ := strconv.ParseUint(operation.Memo.Nonce,10,64)
+		//nonce, _ := strconv.ParseUint(operation.Memo.Nonce,10,64)
+		nonce := operation.Memo.Nonce
 		memoText,err=encoding.Decrypt(operation.Memo.Message.String(),from.Options.MemoKey,to.Options.MemoKey,nonce,bs.wm.Config.MemoPrivateKey)
 		if err !=nil{
 			bs.wm.Log.Std.Error("cannot get transaction memo, txId=%s  \n err= %v", result.TxID, err)

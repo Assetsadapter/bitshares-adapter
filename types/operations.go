@@ -171,7 +171,7 @@ func (p *Buffer) UnmarshalJSON(data []byte) error {
 type Memo struct {
 	From    string `json:"from"`
 	To      string `json:"to"`
-	Nonce   string `json:"nonce"`
+	Nonce   uint64 `json:"nonce"`
 	Message Buffer `json:"message"`
 }
 
