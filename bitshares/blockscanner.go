@@ -93,6 +93,7 @@ func (bs *BtsBlockScanner) ScanBlockTask() {
 
 	if err != nil {
 		bs.wm.Log.Std.Error("", err)
+		return
 	}
 
 	if currentHeight == 0 {
@@ -101,6 +102,7 @@ func (bs *BtsBlockScanner) ScanBlockTask() {
 		headBlock, err := bs.GetGlobalHeadBlock()
 		if err != nil {
 			bs.wm.Log.Std.Info("get head block error, err=%v", err)
+			return
 		}
 
 		currentHash = headBlock.Previous
